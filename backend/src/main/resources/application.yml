@@ -1,0 +1,10 @@
+server:
+  port: 8086
+
+spring:
+  application:
+    name: port-master
+
+portmaster:
+  monitor:
+    poll-interval-ms: 5000
