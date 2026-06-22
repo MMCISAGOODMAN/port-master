@@ -2,30 +2,36 @@
   <el-dialog
     :model-value="modelValue"
     @update:model-value="$emit('update:modelValue', $event)"
-    title="设置"
+    :title="t('settings.title')"
     width="420px"
     @open="loadSettings"
     @closed="onDialogClosed"
   >
     <el-form label-width="120px">
-      <el-form-item label="界面主题">
-        <el-radio-group v-model="localSettings.theme">
-          <el-radio value="light">浅色</el-radio>
-          <el-radio value="dark">深色</el-radio>
-        </el-radio-group>
-      </el-form-item>
-      <el-form-item label="自动刷新">
-        <el-select v-model="localSettings.autoRefreshInterval" style="width: 100%">
-          <el-option label="关闭" :value="0" />
-          <el-option label="每 10 秒" :value="10" />
-          <el-option label="每 30 秒" :value="30" />
-          <el-option label="每 60 秒" :value="60" />
+      <el-form-item :label="t('settings.language')">
+        <el-select v-model="localSettings.locale" style="width: 100%">
+          <el-option :label="t('settings.langZh')" value="zh-CN" />
+          <el-option :label="t('settings.langEn')" value="en" />
         </el-select>
       </el-form-item>
-      <el-form-item label="默认仅监听">
+      <el-form-item :label="t('settings.theme')">
+        <el-radio-group v-model="localSettings.theme">
+          <el-radio value="light">{{ t('settings.light') }}</el-radio>
+          <el-radio value="dark">{{ t('settings.dark') }}</el-radio>
+        </el-radio-group>
+      </el-form-item>
+      <el-form-item :label="t('settings.autoRefresh')">
+        <el-select v-model="localSettings.autoRefreshInterval" style="width: 100%">
+          <el-option :label="t('settings.refreshOff')" :value="0" />
+          <el-option :label="t('settings.refresh10')" :value="10" />
+          <el-option :label="t('settings.refresh30')" :value="30" />
+          <el-option :label="t('settings.refresh60')" :value="60" />
+        </el-select>
+      </el-form-item>
+      <el-form-item :label="t('settings.defaultListenOnly')">
         <el-switch v-model="localSettings.listenOnly" />
       </el-form-item>
-      <el-form-item label="每页条数">
+      <el-form-item :label="t('settings.pageSize')">
         <el-select v-model="localSettings.defaultPageSize" style="width: 100%">
           <el-option :value="20" label="20" />
           <el-option :value="50" label="50" />
@@ -35,28 +41,32 @@
       </el-form-item>
     </el-form>
     <template #footer>
-      <el-button @click="$emit('update:modelValue', false)">取消</el-button>
-      <el-button type="primary" @click="save">保存</el-button>
+      <el-button @click="$emit('update:modelValue', false)">{{ t('common.cancel') }}</el-button>
+      <el-button type="primary" @click="save">{{ t('common.save') }}</el-button>
     </template>
   </el-dialog>
 </template>
 
 <script setup>
 import { ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
+import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
+import en from 'element-plus/dist/locale/en.mjs'
 import { loadFromStorage, saveToStorage, STORAGE_KEYS, getDefaultSettings } from '@/utils/storage'
 import { applyTheme } from '@/utils/theme'
+import { setLocale } from '@/i18n'
 
 defineProps({ modelValue: Boolean })
 const emit = defineEmits(['update:modelValue', 'change'])
 
+const { t, locale } = useI18n()
 const localSettings = ref(getDefaultSettings())
 
 function loadSettings() {
   localSettings.value = { ...getDefaultSettings(), ...loadFromStorage(STORAGE_KEYS.SETTINGS, getDefaultSettings()) }
 }
 
-// 设置弹窗内切换主题时实时预览
 watch(() => localSettings.value.theme, (theme) => {
   if (theme) applyTheme(theme)
 })
@@ -64,12 +74,16 @@ watch(() => localSettings.value.theme, (theme) => {
 function save() {
   saveToStorage(STORAGE_KEYS.SETTINGS, localSettings.value)
   applyTheme(localSettings.value.theme)
+  if (localSettings.value.locale && localSettings.value.locale !== locale.value) {
+    setLocale(localSettings.value.locale)
+    window.location.reload()
+    return
+  }
   emit('change', { ...localSettings.value })
   emit('update:modelValue', false)
-  ElMessage.success('设置已保存')
+  ElMessage.success(t('settings.saved'))
 }
 
-/** 取消关闭时恢复已保存的主题 */
 function onDialogClosed() {
   const persisted = loadFromStorage(STORAGE_KEYS.SETTINGS, getDefaultSettings())
   applyTheme(persisted.theme || 'light')

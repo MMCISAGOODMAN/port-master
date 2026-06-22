@@ -5,14 +5,17 @@ const STORAGE_KEYS = {
   GROUPS: 'portmaster_groups',
   MONITOR: 'portmaster_monitor',
   HISTORY: 'portmaster_history',
-  SETTINGS: 'portmaster_settings'
+  SETTINGS: 'portmaster_settings',
+  REMOTE_HOSTS: 'portmaster_remote_hosts',
+  SCAN_HISTORY: 'portmaster_scan_history'
 }
 
 /** 默认设置 */
 export function getDefaultSettings() {
   return {
-    theme: 'light',            // light | dark
-    autoRefreshInterval: 0,    // 0=关闭, 单位秒
+    theme: 'light',
+    locale: 'zh-CN',           // zh-CN | en
+    autoRefreshInterval: 0,
     listenOnly: false,
     defaultPageSize: 50
   }

@@ -22,4 +22,10 @@ public class PortProbeResultDTO {
     /** 响应耗时 ms */
     private Long latencyMs;
     private String message;
+    /** 探测类型: TCP / HTTP / TLS */
+    private String probeType;
+    /** HTTP 状态码 */
+    private Integer httpStatus;
+    /** TLS 证书信息 */
+    private String certInfo;
 }

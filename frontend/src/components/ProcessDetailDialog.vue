@@ -2,7 +2,7 @@
   <el-dialog
     :model-value="modelValue"
     @update:model-value="$emit('update:modelValue', $event)"
-    title="进程详情"
+    :title="t('process.detailTitle')"
     width="680px"
     destroy-on-close
     @open="startRefresh"
@@ -10,26 +10,26 @@
   >
     <div v-loading="loading">
       <el-descriptions :column="2" border v-if="detail">
-        <el-descriptions-item label="PID">{{ detail.pid }}</el-descriptions-item>
-        <el-descriptions-item label="进程名">{{ detail.processName || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="CPU 占用">{{ detail.cpuPercent?.toFixed(1) || 0 }}%</el-descriptions-item>
-        <el-descriptions-item label="内存占用">{{ detail.memoryUsage || (detail.memoryPercent?.toFixed(1) + '%') || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="创建时间" :span="2">{{ detail.createTime || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="程序路径" :span="2">
+        <el-descriptions-item :label="t('table.pid')">{{ detail.pid }}</el-descriptions-item>
+        <el-descriptions-item :label="t('process.processName')">{{ detail.processName || '-' }}</el-descriptions-item>
+        <el-descriptions-item :label="t('process.cpuUsage')">{{ detail.cpuPercent?.toFixed(1) || 0 }}%</el-descriptions-item>
+        <el-descriptions-item :label="t('process.memoryUsage')">{{ detail.memoryUsage || (detail.memoryPercent?.toFixed(1) + '%') || '-' }}</el-descriptions-item>
+        <el-descriptions-item :label="t('process.createTime')" :span="2">{{ detail.createTime || '-' }}</el-descriptions-item>
+        <el-descriptions-item :label="t('process.programPath')" :span="2">
           <span class="path-text">{{ detail.programPath || '-' }}</span>
         </el-descriptions-item>
-        <el-descriptions-item label="启动命令" :span="2">
+        <el-descriptions-item :label="t('process.commandLine')" :span="2">
           <span class="path-text">{{ detail.commandLine || '-' }}</span>
         </el-descriptions-item>
       </el-descriptions>
 
       <div class="bound-ports" v-if="detail?.boundPorts?.length">
-        <h4>绑定端口 ({{ detail.boundPorts.length }})</h4>
+        <h4>{{ t('process.boundPorts', { count: detail.boundPorts.length }) }}</h4>
         <el-table :data="detail.boundPorts" size="small" border max-height="200">
-          <el-table-column prop="protocol" label="协议" width="70" />
-          <el-table-column prop="port" label="端口" width="80" />
-          <el-table-column prop="localAddress" label="本地地址" />
-          <el-table-column prop="state" label="状态" width="120">
+          <el-table-column prop="protocol" :label="t('process.protocol')" width="70" />
+          <el-table-column prop="port" :label="t('process.port')" width="80" />
+          <el-table-column prop="localAddress" :label="t('process.localAddress')" />
+          <el-table-column prop="state" :label="t('process.state')" width="120">
             <template #default="{ row }">
               <el-tag size="small">{{ row.state }}</el-tag>
             </template>
@@ -39,23 +39,26 @@
     </div>
 
     <div class="refresh-hint text-muted">
-      <el-icon><Refresh /></el-icon> 数据每 2 秒自动刷新
+      <el-icon><Refresh /></el-icon> {{ t('process.autoRefresh') }}
     </div>
 
     <template #footer>
-      <el-button @click="fetchDetail" :icon="Refresh">刷新</el-button>
-      <el-button type="warning" @click="handleKill(false)">正常结束</el-button>
-      <el-button type="danger" @click="handleKill(true)">强制杀死</el-button>
-      <el-button @click="$emit('update:modelValue', false)">关闭</el-button>
+      <el-button @click="fetchDetail" :icon="Refresh">{{ t('common.refresh') }}</el-button>
+      <el-button type="warning" @click="handleKill(false)">{{ t('table.normalEnd') }}</el-button>
+      <el-button type="danger" @click="handleKill(true)">{{ t('table.forceEnd') }}</el-button>
+      <el-button @click="$emit('update:modelValue', false)">{{ t('common.close') }}</el-button>
     </template>
   </el-dialog>
 </template>
 
 <script setup>
 import { ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Refresh } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import request from '@/api'
+
+const { t } = useI18n()
 
 const props = defineProps({
   modelValue: Boolean,
@@ -96,12 +99,12 @@ function stopRefresh() {
 }
 
 async function handleKill(force) {
-  const action = force ? '强制杀死' : '正常结束'
+  const action = force ? t('table.forceEnd') : t('table.normalEnd')
   try {
-    await ElMessageBox.confirm(`确定${action}进程 PID: ${props.pid}？`, '确认', { type: 'warning' })
+    await ElMessageBox.confirm(t('table.confirmKill', { action, pid: props.pid }), t('common.confirmTitle'), { type: 'warning' })
     const url = force ? `/process/${props.pid}/force` : `/process/${props.pid}`
     const res = await request.delete(url)
-    ElMessage.success(res.message || '操作成功')
+    ElMessage.success(res.message || t('common.success'))
     emit('update:modelValue', false)
   } catch { /* cancelled or error */ }
 }

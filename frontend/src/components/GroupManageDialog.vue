@@ -2,7 +2,7 @@
   <el-dialog
     :model-value="modelValue"
     @update:model-value="$emit('update:modelValue', $event)"
-    title="分组管理"
+    :title="t('group.manageTitle')"
     width="560px"
   >
     <el-collapse v-model="activeNames">
@@ -20,28 +20,28 @@
         </template>
 
         <div class="group-actions">
-          <el-button size="small" @click="startRename(group)">改名</el-button>
-          <el-button size="small" type="danger" @click="deleteGroup(group)">删除分组</el-button>
+          <el-button size="small" @click="startRename(group)">{{ t('group.rename') }}</el-button>
+          <el-button size="small" type="danger" @click="deleteGroup(group)">{{ t('group.deleteGroup') }}</el-button>
         </div>
 
         <el-table :data="group.ports" size="small" border>
-          <el-table-column prop="port" label="端口" width="80" />
-          <el-table-column prop="remark" label="备注">
+          <el-table-column prop="port" :label="t('group.port')" width="80" />
+          <el-table-column prop="remark" :label="t('group.remark')">
             <template #default="{ row }">
               <el-input v-model="row.remark" size="small" @change="emitUpdate" />
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="80">
+          <el-table-column :label="t('common.action')" width="80">
             <template #default="{ $index }">
-              <el-button link type="danger" size="small" @click="removePort(group, $index)">移除</el-button>
+              <el-button link type="danger" size="small" @click="removePort(group, $index)">{{ t('group.remove') }}</el-button>
             </template>
           </el-table-column>
         </el-table>
 
         <div class="add-port-row">
-          <el-input v-model="group._newPort" placeholder="端口号" size="small" style="width: 100px" />
-          <el-input v-model="group._newRemark" placeholder="备注" size="small" style="width: 200px" />
-          <el-button size="small" type="primary" @click="addPortToGroup(group)">添加</el-button>
+          <el-input v-model="group._newPort" :placeholder="t('group.portPlaceholder')" size="small" style="width: 100px" />
+          <el-input v-model="group._newRemark" :placeholder="t('group.remark')" size="small" style="width: 200px" />
+          <el-button size="small" type="primary" @click="addPortToGroup(group)">{{ t('group.add') }}</el-button>
         </div>
       </el-collapse-item>
     </el-collapse>
@@ -50,8 +50,11 @@
 
 <script setup>
 import { ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import { saveToStorage, STORAGE_KEYS } from '@/utils/storage'
+
+const { t } = useI18n()
 
 const props = defineProps({
   modelValue: Boolean,
@@ -88,11 +91,11 @@ function saveRename(group) {
 }
 
 function deleteGroup(group) {
-  ElMessageBox.confirm(`确定删除分组「${group.name}」？`, '确认', { type: 'warning' })
+  ElMessageBox.confirm(t('group.confirmDelete', { name: group.name }), t('common.confirmTitle'), { type: 'warning' })
     .then(() => {
       localGroups.value = localGroups.value.filter(g => g.id !== group.id)
       emitUpdate()
-      ElMessage.success('已删除')
+      ElMessage.success(t('group.deleted'))
     }).catch(() => {})
 }
 
@@ -104,11 +107,11 @@ function removePort(group, index) {
 function addPortToGroup(group) {
   const port = parseInt(group._newPort)
   if (!port) {
-    ElMessage.warning('请输入有效端口')
+    ElMessage.warning(t('group.invalidPort'))
     return
   }
   if (group.ports.some(p => p.port === port)) {
-    ElMessage.info('端口已存在')
+    ElMessage.info(t('group.portExists'))
     return
   }
   group.ports.push({ port, remark: group._newRemark || `${port}` })

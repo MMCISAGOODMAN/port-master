@@ -8,3 +8,8 @@ spring:
 portmaster:
   monitor:
     poll-interval-ms: 5000
+  scan:
+    cache-ttl-ms: 3000
+  ssh:
+    connect-timeout-ms: 10000
+    command-timeout-sec: 60

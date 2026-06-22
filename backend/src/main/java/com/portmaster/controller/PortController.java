@@ -22,8 +22,9 @@ public class PortController {
 
     /** 全量端口扫描 */
     @GetMapping("/scan")
-    public ApiResponse<List<PortInfoDTO>> scanAll() {
-        return ApiResponse.success(portService.scanAllPorts());
+    public ApiResponse<List<PortInfoDTO>> scanAll(
+            @RequestParam(defaultValue = "false") boolean refresh) {
+        return ApiResponse.success(portService.scanAllPorts(refresh));
     }
 
     /** 单端口查询 */
@@ -109,5 +110,24 @@ public class PortController {
             }
         }
         return ApiResponse.success(results);
+    }
+
+    /** HTTP 健康探测 */
+    @GetMapping("/probe/http")
+    public ApiResponse<PortProbeResultDTO> probeHttp(
+            @RequestParam int port,
+            @RequestParam(defaultValue = "127.0.0.1") String host,
+            @RequestParam(defaultValue = "/") String path,
+            @RequestParam(defaultValue = "3000") int timeout) {
+        return ApiResponse.success(portProbeService.probeHttp(host, port, path, timeout));
+    }
+
+    /** TLS/SSL 证书探测 */
+    @GetMapping("/probe/tls")
+    public ApiResponse<PortProbeResultDTO> probeTls(
+            @RequestParam int port,
+            @RequestParam(defaultValue = "127.0.0.1") String host,
+            @RequestParam(defaultValue = "3000") int timeout) {
+        return ApiResponse.success(portProbeService.probeTls(host, port, timeout));
     }
 }

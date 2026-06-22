@@ -18,3 +18,7 @@ Thumbs.db
 
 # Logs
 *.log
+
+# WeChat article tooling
+docs/wechat-article/node_modules/
+docs/wechat-article/package-lock.json

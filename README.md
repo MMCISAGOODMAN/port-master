@@ -8,8 +8,13 @@
   <img src="https://img.shields.io/badge/Spring%20Boot-3.2-6DB33F?logo=springboot&logoColor=white" alt="Spring Boot"/>
   <img src="https://img.shields.io/badge/Java-17-007396?logo=openjdk&logoColor=white" alt="Java 17"/>
   <img src="https://img.shields.io/badge/Vue-3-4FC08D?logo=vuedotjs&logoColor=white" alt="Vue 3"/>
+  <img src="https://img.shields.io/badge/Version-2.1.0-blue" alt="Version 2.1"/>
   <img src="https://img.shields.io/badge/License-MIT-blue" alt="MIT License"/>
 </p>
+
+> **v2.1 更新亮点**：WebSocket 后台监控告警 · Kubernetes Pod/Service 端口 · 中英文界面切换
+
+> **v2.0 更新亮点**：SSH 远程管理 · Docker 容器端口 · HTTP/TLS 探测 · 扫描历史趋势 · 网络接口 · 释端口 · 扫描缓存优化
 
 ---
 
@@ -43,8 +48,27 @@
 | 端口连通探测 | TCP Socket 探测端口是否可达，支持批量探测 |
 | 端口冲突检测 | 检测同一端口被多个进程监听，表格高亮 + 独立弹窗 |
 | 扫描对比 | 与上次扫描结果对比，高亮新增 / 变化端口 |
-| 按端口杀进程 | 一键释放指定端口（结束占用该端口的所有进程） |
+| 按端口杀进程 | 一键释放指定端口（结束占用该端口的所有进程），表格「释端口」按钮 |
 | 快速打开 | HTTP 类端口（80/8080/3000 等）LISTEN 状态可一键浏览器打开 |
+| 扫描缓存 | 后端可配置 TTL 缓存，减少重复全量扫描开销 |
+| HTTP/TLS 探测 | HTTP 健康检查 + TLS 证书过期天数检测 |
+
+### 远程 & 容器
+
+| 功能 | 说明 |
+|------|------|
+| SSH 远程管理 | 连接远程 Linux/macOS/Windows，扫描端口、远程杀进程，支持密码/私钥 |
+| Docker 容器 | 列出容器端口映射，一键查端口、停止/重启容器 |
+| Kubernetes | 通过 kubectl 查看 Pod/Service 端口映射，一键跳转本地端口查询 |
+| 网络接口 | 查看本机网卡 IP/MAC/状态，一键复制 IP |
+
+### 数据 & 趋势
+
+| 功能 | 说明 |
+|------|------|
+| 扫描历史 | 每次全量扫描自动记录快照，对比监听端口/连接数变化趋势 |
+| 远程主机收藏 | 保存常用 SSH 主机（不含密码），快速切换 |
+| WebSocket 告警 | 启用监控后服务端后台轮询，WebSocket 推送告警（标签页在后台也能收到） |
 
 ### 进程管理
 
@@ -74,12 +98,8 @@
 | 常用端口库 | 内置 MySQL 3306、Redis 6379、Nginx 80 等快捷检索 |
 | 主题切换 | 浅色 / 深色主题，工具栏一键切换，设置持久化 |
 | 一键复制 | 表格行端口信息一键复制到剪贴板 |
-
-### 预留扩展
-
-| 功能 | 说明 |
-|------|------|
-| SSH 远程管理 | `controller/remote` 与 `service/remote` 已分层预留，暂未实现 |
+| v2 工具栏 | 远程 SSH、Docker、K8s、扫描历史、网络接口等入口 |
+| 多语言 | 简体中文 / English 界面切换（设置 → 界面语言） |
 
 ---
 
@@ -286,7 +306,7 @@ java -jar port-master-1.0.0.jar --server.port=9090
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| GET | `/ports/scan` | 全量端口扫描 |
+| GET | `/ports/scan?refresh=true` | 全量端口扫描（refresh 强制跳过缓存） |
 | GET | `/ports/query/{port}` | 单端口查询 |
 | GET | `/ports/query?ports=8080,9090` | 批量查询（支持 `8000-8100` 范围） |
 | GET | `/ports/query/range?start=8000&end=8100` | 端口范围查询 |
@@ -297,6 +317,8 @@ java -jar port-master-1.0.0.jar --server.port=9090
 | GET | `/ports/summary` | 扫描汇总统计 |
 | GET | `/ports/probe?port=8080&host=127.0.0.1` | TCP 连通探测 |
 | POST | `/ports/probe/batch` | 批量 TCP 探测 |
+| GET | `/ports/probe/http?port=8080&path=/` | HTTP 健康探测 |
+| GET | `/ports/probe/tls?port=443` | TLS 证书探测 |
 | POST | `/ports/monitor` | 端口监控探测 |
 
 ### 进程
@@ -317,13 +339,49 @@ java -jar port-master-1.0.0.jar --server.port=9090
 |------|------|------|
 | GET | `/system/stats` | 系统监控统计 |
 | GET | `/system/info` | 系统信息与权限提示 |
+| GET | `/system/config` | 服务端配置（轮询间隔、缓存 TTL、版本号） |
 
-### 远程（预留）
+### 监控 WebSocket
+
+| 类型 | 路径 | 说明 |
+|------|------|------|
+| WebSocket | `/ws/monitor` | 订阅监控告警推送（JSON `{type:"alert", alerts:[...]}`） |
+| POST | `/monitor/config` | 同步监控配置到服务端（供后台轮询） |
+| GET | `/monitor/status` | 监控运行状态 |
+
+### Kubernetes
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| POST | `/remote/scan` | 远程扫描（501 未实现） |
-| POST | `/remote/kill` | 远程杀进程（501 未实现） |
+| GET | `/k8s/available` | kubectl 是否可用 |
+| GET | `/k8s/context` | 当前 kubectl context |
+| GET | `/k8s/pods?namespace=` | Pod 列表及容器端口 |
+| GET | `/k8s/services?namespace=` | Service 列表及端口映射 |
+| GET | `/k8s/summary?namespace=` | K8s 资源汇总 |
+
+### Docker
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/docker/available` | Docker 是否可用 |
+| GET | `/docker/containers?all=false` | 容器列表及端口映射 |
+| POST | `/docker/stop` | 停止容器 |
+| POST | `/docker/restart` | 重启容器 |
+
+### 网络
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/network/interfaces` | 本机网络接口列表 |
+
+### 远程 SSH
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| POST | `/remote/test` | 测试 SSH 连接 |
+| POST | `/remote/info` | 获取远程系统信息 |
+| POST | `/remote/scan` | 远程端口扫描 |
+| POST | `/remote/kill` | 远程杀进程 |
 
 ### 响应格式
 
@@ -343,11 +401,16 @@ java -jar port-master-1.0.0.jar --server.port=9090
 
 ```yaml
 server:
-  port: 8080          # 服务端口，可通过 --server.port 覆盖
+  port: 8086          # 服务端口，可通过 --server.port 覆盖
 
 portmaster:
   monitor:
-    poll-interval-ms: 5000   # 监控轮询间隔（预留）
+    poll-interval-ms: 5000   # 监控轮询间隔，前端自动读取
+  scan:
+    cache-ttl-ms: 3000       # 扫描结果缓存 TTL，0=不缓存
+  ssh:
+    connect-timeout-ms: 10000
+    command-timeout-sec: 60
 ```
 
 ### 前端 LocalStorage 键
@@ -357,7 +420,9 @@ portmaster:
 | `portmaster_groups` | 端口分组收藏 |
 | `portmaster_monitor` | 端口监控配置 |
 | `portmaster_history` | 操作历史 |
-| `portmaster_settings` | 主题、自动刷新、分页等设置 |
+| `portmaster_settings` | 主题、语言、自动刷新、分页等设置 |
+| `portmaster_remote_hosts` | SSH 主机收藏（不含密码） |
+| `portmaster_scan_history` | 扫描历史快照 |
 
 可通过「备份」功能导出为 JSON 文件。
 

@@ -1,5 +1,6 @@
 package com.portmaster.controller;
 
+import com.portmaster.config.PortMasterProperties;
 import com.portmaster.model.dto.ApiResponse;
 import com.portmaster.model.dto.SystemStatsDTO;
 import com.portmaster.service.SystemMonitorService;
@@ -20,6 +21,7 @@ import java.util.Map;
 public class SystemController {
 
     private final SystemMonitorService systemMonitorService;
+    private final PortMasterProperties properties;
 
     /** 获取系统监控统计 */
     @GetMapping("/stats")
@@ -41,7 +43,18 @@ public class SystemController {
                 "osType", osType,
                 "osCategory", OsDetector.getOsType().name(),
                 "javaVersion", System.getProperty("java.version"),
+                "version", "2.1.0",
                 "permissionHint", permissionHint
+        ));
+    }
+
+    /** 获取服务端配置（供前端读取） */
+    @GetMapping("/config")
+    public ApiResponse<Map<String, Object>> getConfig() {
+        return ApiResponse.success(Map.of(
+                "monitorPollIntervalMs", properties.getMonitor().getPollIntervalMs(),
+                "scanCacheTtlMs", properties.getScan().getCacheTtlMs(),
+                "version", "2.1.0"
         ));
     }
 }

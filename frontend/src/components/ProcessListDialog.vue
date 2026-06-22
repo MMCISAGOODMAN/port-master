@@ -2,34 +2,34 @@
   <el-dialog
     :model-value="modelValue"
     @update:model-value="$emit('update:modelValue', $event)"
-    title="进程列表"
+    :title="t('process.title')"
     width="900px"
     destroy-on-close
     @open="fetchProcesses"
   >
     <div class="toolbar">
-      <el-input v-model="keyword" placeholder="搜索 PID / 进程名" clearable style="width: 240px" :prefix-icon="Search" />
-      <el-button :icon="Refresh" @click="fetchProcesses" :loading="loading">刷新</el-button>
-      <span class="text-muted">共 {{ filteredList.length }} 个进程</span>
+      <el-input v-model="keyword" :placeholder="t('process.searchPlaceholder')" clearable style="width: 240px" :prefix-icon="Search" />
+      <el-button :icon="Refresh" @click="fetchProcesses" :loading="loading">{{ t('common.refresh') }}</el-button>
+      <span class="text-muted">{{ t('process.total', { count: filteredList.length }) }}</span>
     </div>
 
     <el-table :data="paginatedList" v-loading="loading" stripe border max-height="480" @row-click="handleRowClick">
-      <el-table-column prop="pid" label="PID" width="90" sortable />
-      <el-table-column prop="processName" label="进程名" min-width="140" show-overflow-tooltip />
-      <el-table-column prop="cpuPercent" label="CPU%" width="80" sortable>
+      <el-table-column prop="pid" :label="t('table.pid')" width="90" sortable />
+      <el-table-column prop="processName" :label="t('process.processName')" min-width="140" show-overflow-tooltip />
+      <el-table-column prop="cpuPercent" :label="t('process.cpu')" width="80" sortable>
         <template #default="{ row }">{{ row.cpuPercent?.toFixed(1) || 0 }}</template>
       </el-table-column>
-      <el-table-column prop="memoryPercent" label="内存%" width="80" sortable>
+      <el-table-column prop="memoryPercent" :label="t('process.memory')" width="80" sortable>
         <template #default="{ row }">{{ row.memoryPercent?.toFixed(1) || 0 }}</template>
       </el-table-column>
-      <el-table-column prop="memoryUsage" label="内存占用" width="100" />
-      <el-table-column prop="portCount" label="端口数" width="80" sortable />
-      <el-table-column label="操作" width="200" fixed="right">
+      <el-table-column prop="memoryUsage" :label="t('process.memoryUsage')" width="100" />
+      <el-table-column prop="portCount" :label="t('process.portCount')" width="80" sortable />
+      <el-table-column :label="t('common.action')" width="200" fixed="right">
         <template #default="{ row }">
-          <el-button link type="primary" size="small" @click.stop="$emit('view-detail', row.pid)">详情</el-button>
-          <el-button link type="primary" size="small" @click.stop="$emit('view-ports', row.pid)">查端口</el-button>
-          <el-button link type="warning" size="small" @click.stop="confirmKill(row.pid, false)">结束</el-button>
-          <el-button link type="danger" size="small" @click.stop="confirmKill(row.pid, true)">强杀</el-button>
+          <el-button link type="primary" size="small" @click.stop="$emit('view-detail', row.pid)">{{ t('process.detail') }}</el-button>
+          <el-button link type="primary" size="small" @click.stop="$emit('view-ports', row.pid)">{{ t('process.viewPorts') }}</el-button>
+          <el-button link type="warning" size="small" @click.stop="confirmKill(row.pid, false)">{{ t('table.kill') }}</el-button>
+          <el-button link type="danger" size="small" @click.stop="confirmKill(row.pid, true)">{{ t('table.forceKill') }}</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -49,9 +49,12 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Search, Refresh } from '@element-plus/icons-vue'
 import { ElMessageBox } from 'element-plus'
 import request from '@/api'
+
+const { t } = useI18n()
 
 defineProps({ modelValue: Boolean })
 const emit = defineEmits(['update:modelValue', 'view-detail', 'view-ports', 'kill'])
@@ -91,8 +94,8 @@ function handleRowClick(row) {
 }
 
 function confirmKill(pid, force) {
-  const action = force ? '强制杀死' : '正常结束'
-  ElMessageBox.confirm(`确定${action}进程 PID: ${pid}？`, '确认', { type: 'warning' })
+  const action = force ? t('table.forceEnd') : t('table.normalEnd')
+  ElMessageBox.confirm(t('table.confirmKill', { action, pid }), t('common.confirmTitle'), { type: 'warning' })
     .then(() => emit('kill', pid, force))
     .catch(() => {})
 }

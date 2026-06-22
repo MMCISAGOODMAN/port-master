@@ -1,7 +1,7 @@
 package com.portmaster.service;
 
+import com.portmaster.config.PortMasterProperties;
 import com.portmaster.model.dto.*;
-import com.portmaster.util.CommandExecutor;
 import com.portmaster.util.OsDetector;
 import com.portmaster.util.parser.UnixPortParser;
 import com.portmaster.util.parser.WindowsPortParser;
@@ -20,17 +20,48 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class PortService {
 
+    private final PortMasterProperties properties;
     private final WindowsPortParser windowsPortParser = new WindowsPortParser();
     private final UnixPortParser unixPortParser = new UnixPortParser();
+
+    private volatile List<PortInfoDTO> cachedScan;
+    private volatile long cacheTimestamp;
 
     /**
      * 全量扫描本机全部 TCP/UDP 端口
      */
     public List<PortInfoDTO> scanAllPorts() {
-        if (OsDetector.isWindows()) {
-            return windowsPortParser.scanAllPorts();
+        return scanAllPorts(false);
+    }
+
+    /**
+     * 全量扫描，forceRefresh=true 时跳过缓存
+     */
+    public List<PortInfoDTO> scanAllPorts(boolean forceRefresh) {
+        long ttl = properties.getScan().getCacheTtlMs();
+        if (!forceRefresh && ttl > 0 && cachedScan != null
+                && System.currentTimeMillis() - cacheTimestamp < ttl) {
+            return cachedScan;
         }
-        return unixPortParser.scanAllPorts();
+
+        List<PortInfoDTO> result;
+        if (OsDetector.isWindows()) {
+            result = windowsPortParser.scanAllPorts();
+        } else {
+            result = unixPortParser.scanAllPorts();
+        }
+
+        if (ttl > 0) {
+            cachedScan = result;
+            cacheTimestamp = System.currentTimeMillis();
+        }
+        return result;
+    }
+
+    /** 清除扫描缓存 */
+    public void invalidateCache() {
+        cachedScan = null;
+        cacheTimestamp = 0;
     }
 
     /**
